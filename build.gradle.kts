@@ -1,4 +1,3 @@
-import groovy.json.JsonOutput
 import java.time.LocalDate
 
 // Top-level build file where you can add configuration options common to all subprojects/modules.
@@ -24,7 +23,8 @@ fun executeGitCommand(command: String, default: String = ""): String {
 val versionCode = executeGitCommand("git rev-list --count HEAD", "1")
 val tagName = executeGitCommand("git tag --points-at HEAD")
 val hash = executeGitCommand("git rev-parse --short HEAD", "nohash")
-val outputsDir = "build/appOutputs/"
+val branch = executeGitCommand("git rev-parse --abbrev-ref HEAD")
+val outputsDir = "build/appOutputs/$branch/${tagName.ifBlank { "nightly/r$versionCode.$hash" }}"
 
 ext {
     set("versionCode", versionCode)
@@ -32,7 +32,10 @@ ext {
     set("hash", hash)
     set("outputsDir", outputsDir)
 }
-val changelogDir: File = project.rootProject.file("app/${outputsDir}${tagName.ifBlank { "nightly" }}")
+
+
+val changelogDir: File = project.rootProject.file(outputsDir)
+val mdFileName = "ChangeLog.md"
 
 tasks.register("generateChangelog") {
     group = "documentation"
@@ -40,35 +43,19 @@ tasks.register("generateChangelog") {
 
     doLast {
         val dateStr = LocalDate.now().toString()
-        val mdFileName = "ChangeLog.md"
 
-        val newEntry = mapOf(
-            "version" to tagName,
-            "date" to dateStr,
-            "title" to "新版本 $tagName",
-            "file" to mdFileName,
-            "type" to tagName.ifBlank { "nightly" }
-        )
-
-        val jsonFile = File(changelogDir, if (tagName.isNotBlank()) "index.json" else "r$versionCode.$hash.json")
-        jsonFile.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(newEntry)))
 
         if (tagName.isBlank()) {
             println("当前 HEAD 没有 Tag，跳过。")
             return@doLast
         }
 
-        val prevTag = try {
-            executeGitCommand("git describe --tags --abbrev=0 HEAD^").trim()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
+        val prevTag = executeGitCommand("git describe --tags --abbrev=0 HEAD^")
         val range = if (prevTag.isNotEmpty()) "$prevTag..HEAD" else "HEAD"
 
         println("处理版本: $tagName (From $prevTag)")
 
-        // 3. 获取并解析 Log
+        // 获取并解析 Log
         val logs = executeGitCommand("git log $range --pretty=format:%s").lines().distinct()
         // 分类容器: Type -> List of "Scope: Message"
         val changes = mutableMapOf<String, MutableList<String>>()
@@ -80,7 +67,7 @@ tasks.register("generateChangelog") {
             val match = regex.find(line)
             if (match != null) {
                 val (type, _, scope, message) = match.destructured
-                if (type == "chore") return@forEach
+                if (type in arrayOf("test", "chore", "style", "docs")) return@forEach
                 // 格式化单行文案: "Scope: Message" 或 "Message"
                 val formattedMsg = if (scope.isNotBlank()) "**$scope**: $message" else message
                 changes.getOrPut(type) { mutableListOf() }.add(formattedMsg)
@@ -93,9 +80,6 @@ tasks.register("generateChangelog") {
             println("无变更记录")
             return@doLast
         }
-
-        // 4. 生成 Markdown 内容
-        if (!changelogDir.exists()) changelogDir.mkdirs()
 
         val mdFile = File(changelogDir, mdFileName)
 
@@ -122,12 +106,12 @@ tasks.register("generateChangelog") {
         }
 
         // 写入 MD 文件
+        if (!(changelogDir.exists())) changelogDir.mkdirs()
         mdFile.writeText(mdContent.toString())
         println("Markdown 生成完毕: ${mdFile.name}")
     }
 }
 
-// 当 assemble 执行完后，自动触发 generateChangelog
 tasks.named("assemble") {
     finalizedBy("generateChangelog")
 }

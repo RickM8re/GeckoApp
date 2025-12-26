@@ -1,10 +1,12 @@
 [versions]
 agp = "8.12.0"
 composeMarkdown = "0.5.8"
+converterJackson = "3.0.0"
 coreSplashscreen = "1.2.0"
 documentfile = "1.1.0"
 glide = "5.0.5"
 jacksonDatabind = "2.20.1"
+jacksonModuleKotlin = "2.20.1"
 kotlin = "2.2.21"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -14,6 +16,7 @@ kotlinReflect = "2.2.21"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.2"
 composeBom = "2025.12.00"
+retrofit = "3.0.0"
 roomRuntime = "2.8.4"
 startupRuntime = "1.2.0"
 workRuntime = "2.11.0"
@@ -47,7 +50,9 @@ androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "
 
 
 compose-markdown = { module = "com.github.jeziellago:compose-markdown", version.ref = "composeMarkdown" }
+converter-jackson = { module = "com.squareup.retrofit2:converter-jackson", version.ref = "converterJackson" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jacksonModuleKotlin" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
@@ -60,6 +65,7 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 
 
 geckoview = { module = "org.mozilla.geckoview:geckoview", version.ref = "geckoview" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
