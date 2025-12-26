@@ -29,7 +29,8 @@ simply integrated geckoview, a firefox webview component.
 
 # TODO
 
-- [x] stream message
-- [x] more activity configuration
-- [x] Glide cache
+- [x] update checking
+- [ ] stream message
+- [ ] more activity configuration
+- [ ] Glide cache
 

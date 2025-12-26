@@ -25,17 +25,19 @@ val tagName = executeGitCommand("git tag --points-at HEAD")
 val hash = executeGitCommand("git rev-parse --short HEAD", "nohash")
 val branch = executeGitCommand("git rev-parse --abbrev-ref HEAD")
 val outputsDir = "build/appOutputs/$branch/${tagName.ifBlank { "nightly/r$versionCode.$hash" }}"
+val mdFileName = "ChangeLog.md"
 
 ext {
     set("versionCode", versionCode)
     set("tagName", tagName)
     set("hash", hash)
+    set("branch", branch)
     set("outputsDir", outputsDir)
+    set("changeLog", mdFileName)
 }
 
 
 val changelogDir: File = project.rootProject.file(outputsDir)
-val mdFileName = "ChangeLog.md"
 
 tasks.register("generateChangelog") {
     group = "documentation"

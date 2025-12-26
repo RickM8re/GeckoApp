@@ -1,6 +1,7 @@
 package re.rickmoo.gecko.component
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -9,6 +10,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import org.json.JSONObject
+import re.rickmoo.gecko.service.update.AppUpdateService
 
 class ActivityConfiguration(private val activity: Activity) {
 
@@ -39,5 +41,10 @@ class ActivityConfiguration(private val activity: Activity) {
                 ),
             )
         }
+    }
+
+    fun startUpdateService() {
+        val intent = Intent(activity, AppUpdateService::class.java)
+        activity.startService(intent)
     }
 }

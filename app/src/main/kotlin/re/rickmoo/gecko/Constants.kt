@@ -1,4 +1,4 @@
-package re.rickmoo.gecko.infra
+package re.rickmoo.gecko
 
 object GeckoConstants {
     const val KOIN_SCOPE_NAME = "GeckoScope"

@@ -7,10 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
@@ -20,6 +16,7 @@ import re.rickmoo.gecko.infra.ActivityBridge
 import re.rickmoo.gecko.infra.GeckoConfigurer
 import re.rickmoo.gecko.infra.GetContentWithMimeTypes
 import re.rickmoo.gecko.infra.GetMultipleContentWithMimeTypes
+import re.rickmoo.gecko.service.update.AppUpdateService
 
 class WebViewActivity : ComponentActivity(), ActivityBridge {
     @Volatile
@@ -51,8 +48,14 @@ class WebViewActivity : ComponentActivity(), ActivityBridge {
         }
         configurer.load("https://www.bilibili.com")
         setContent {
-            GeckoView(geckoView)
+            re.rickmoo.gecko.compose.GeckoView(geckoView, lifecycle)
         }
+        startUpdateService()
+    }
+
+    fun startUpdateService() {
+        val intent = Intent(this, AppUpdateService::class.java)
+        startService(intent)
     }
 
     // 多个权限申请
@@ -101,11 +104,3 @@ class WebViewActivity : ComponentActivity(), ActivityBridge {
     }
 }
 
-
-@Composable
-fun GeckoView(geckoView: GeckoView) {
-    AndroidView(
-        { geckoView },
-        Modifier.fillMaxSize(),
-    )
-}

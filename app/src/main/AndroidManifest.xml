@@ -9,6 +9,7 @@
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
   <application
     android:allowBackup="true"
@@ -32,6 +33,7 @@
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
+    <service android:name=".service.update.AppUpdateService"/>
     <provider android:name="androidx.startup.InitializationProvider"
               android:authorities="re.rickmoo.gecko.androidx-startup"
               android:exported="false"
@@ -41,6 +43,15 @@
                  android:value="androidx.startup"/>
     </provider>
     <provider android:authorities="re.rickmoo.gecko.infra.GlideContentProvider"
-              android:name=".infra.GlideContentProvider" android:exported="true" android:grantUriPermissions="true"/>
+              android:name=".infra.GlideContentProvider" android:exported="false" android:grantUriPermissions="true"/>
+    <provider
+      android:name="androidx.core.content.FileProvider"
+      android:authorities="re.rickmoo.gecko.install.fileprovider"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/file_paths" />
+    </provider>
   </application>
 </manifest>

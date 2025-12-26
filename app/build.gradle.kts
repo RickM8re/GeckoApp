@@ -9,7 +9,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
 }
-
+val updateBaseUrl: Provider<String?> =
+    providers.environmentVariable("UPDATE_BASE_URL").orElse("http://localhost")
 android {
     namespace = "re.rickmoo.gecko"
     compileSdk {
@@ -26,6 +27,11 @@ android {
         val tagName = rootProject.ext["tagName"].toString()
         versionName = "${if (tagName.isBlank()) "" else "$tagName."}r$versionCode.${rootProject.ext["hash"].toString()}"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GIT_BRANCH", "\"${rootProject.ext["branch"].toString()}\"")
+        buildConfigField("String", "UPDATE_BASE_URL", "\"${updateBaseUrl.get()}\"")
+    }
+    buildFeatures {
+        buildConfig = true
     }
     buildTypes {
         release {
@@ -48,7 +54,7 @@ android {
     }
     packaging {
         jniLibs {
-            useLegacyPackaging = true
+            useLegacyPackaging = false
         }
     }
     compileOptions {
@@ -110,7 +116,7 @@ androidComponents {
             doLast {
                 val dir = outputDirProvider.get()
 
-                // 1. 获取最终的 APK 文件名
+                // 获取最终的 APK 文件名
                 // 因为 Copy 任务重命名了文件，我们需要在目录下找到生成的那个 .apk 文件
                 val apkFile = dir.listFiles { _, name -> name.endsWith(".apk") }
 
@@ -119,21 +125,24 @@ androidComponents {
                     val tagName = rootProject.ext["tagName"].toString()
                     val dateStr = LocalDateTime.now().toString()
 
-                    val newEntry = mapOf(
+                    val newEntry = mutableMapOf(
                         "version" to tagName.ifBlank { versionName },
+                        "versionName" to versionName,
+                        "versionCode" to versionCode,
                         "date" to dateStr,
                         "type" to if (tagName.isBlank()) "nightly" else "release",
                         "apks" to apkFile.associate {
                             nameToAbi(it.name) to it.name
                         }
                     )
+                    if (tagName.isNotBlank()) {
+                        newEntry["changeLog"] = rootProject.ext["changeLog"].toString()
+                    }
 
                     val indexFile = File(dir, "index.json")
-                    val jsonString = JsonOutput.prettyPrint(JsonOutput.toJson(listOf(newEntry)))
+                    val jsonString = JsonOutput.prettyPrint(JsonOutput.toJson(newEntry))
                     indexFile.writeText(jsonString)
                     File(dir.parentFile.parentFile, "latest-${variant.name}.json").writeText(jsonString)
-                    println("Index generated at: ${indexFile.absolutePath}")
-                    println("Entry: $newEntry")
                 } else {
                     println("Skipping index generation: No APK found in ${dir.absolutePath}")
                 }
@@ -158,6 +167,9 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.documentfile)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-service:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -176,6 +188,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation(libs.jackson.databind)
     implementation(libs.jackson.module.kotlin)
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
     implementation(libs.okhttp)
     implementation(libs.androidx.work.runtime)
     // https://mvnrepository.com/artifact/com.squareup.retrofit2/retrofit
