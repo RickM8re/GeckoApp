@@ -5,6 +5,7 @@ import androidx.startup.AppInitializer
 import androidx.startup.Initializer
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
+import org.mozilla.geckoview.GeckoRuntimeSettings.ALLOW_ALL
 
 
 class GeckoRuntimeSettingsInitializer : Initializer<GeckoRuntimeSettings> {
@@ -13,6 +14,8 @@ class GeckoRuntimeSettingsInitializer : Initializer<GeckoRuntimeSettings> {
             .remoteDebuggingEnabled(true)
             .remoteDebuggingEnabled(true)
             .consoleOutput(true)
+            .allowInsecureConnections(ALLOW_ALL)
+            .arguments(arrayOf("--user-pref", "security.fileuri.strict_origin_policy=false"))
             .build()
     }
 

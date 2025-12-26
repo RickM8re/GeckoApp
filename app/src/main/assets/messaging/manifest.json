@@ -9,6 +9,7 @@
         "geckoViewAddons",
         "webRequest",
         "webRequestBlocking",
+        "content://*/*",
         "<all_urls>"
     ],
     "browser_specific_settings": {
