@@ -3,7 +3,6 @@ package re.rickmoo.gecko.compose
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import android.text.format.Formatter
 import android.util.Log
@@ -30,8 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,8 +61,7 @@ fun UpdateDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // 获取屏幕配置以计算高度
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
+    val screenHeight = LocalWindowInfo.current.containerSize.height.dp
     val mdUrl = versionInfo.changeLogUrl
     // 异步加载 Markdown 内容的状态管理
     // 如果 url 为 null，result 默认为 null；如果不为 null，则开始加载
@@ -90,31 +89,27 @@ fun UpdateDialog(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
         // 用户从设置页返回，再次检查权限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val hasPermission = context.packageManager.canRequestPackageInstalls()
-            if (hasPermission && pendingInstallFile != null) {
-                installApk(context, pendingInstallFile!!)
-                pendingInstallFile = null
-            } else {
-                // 用户依然拒绝，提示手动安装或无操作
-                Toast.makeText(context, "需开启权限才能安装更新", Toast.LENGTH_LONG).show()
-            }
+        val hasPermission = context.packageManager.canRequestPackageInstalls()
+        if (hasPermission && pendingInstallFile != null) {
+            installApk(context, pendingInstallFile!!)
+            pendingInstallFile = null
+        } else {
+            // 用户依然拒绝，提示手动安装或无操作
+            Toast.makeText(context, "需开启权限才能安装更新", Toast.LENGTH_LONG).show()
         }
     }
 
     fun checkAndInstall(file: File) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val hasPermission = context.packageManager.canRequestPackageInstalls()
-            if (!hasPermission) {
-                // 1. 没有权限，暂存文件
-                pendingInstallFile = file
-                // 2. 跳转到设置页面
-                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                }
-                installPermissionLauncher.launch(intent)
-                return
+        val hasPermission = context.packageManager.canRequestPackageInstalls()
+        if (!hasPermission) {
+            // 1. 没有权限，暂存文件
+            pendingInstallFile = file
+            // 2. 跳转到设置页面
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = "package:${context.packageName}".toUri()
             }
+            installPermissionLauncher.launch(intent)
+            return
         }
         // 有权限或系统版本低，直接安装
         installApk(context, file)
@@ -276,14 +271,10 @@ fun installApk(context: Context, file: File) {
         val intent = Intent(Intent.ACTION_VIEW)
         val uri: Uri
         // Android 7.0+ 需要 FileProvider
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            // 注意：这里的 authority 必须与 AndroidManifest 中的 provider authorities 一致
-            val authority = "re.rickmoo.gecko.install.fileprovider"
-            uri = FileProvider.getUriForFile(context, authority, file)
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } else {
-            uri = Uri.fromFile(file)
-        }
+        // 注意：这里的 authority 必须与 AndroidManifest 中的 provider authorities 一致
+        val authority = "re.rickmoo.gecko.lcsw.install.fileprovider"
+        uri = FileProvider.getUriForFile(context, authority, file)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
         intent.setDataAndType(uri, "application/vnd.android.package-archive")
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

@@ -1,6 +1,6 @@
 /**
  * @param message {NativeMessage}
- * @param sender {MessageSender
+ * @param sender {MessageSender}
  * @param sendResponse {(any)=>void}
  * @return {boolean}
  * */

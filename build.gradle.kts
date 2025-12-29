@@ -23,15 +23,13 @@ fun executeGitCommand(command: String, default: String = ""): String {
 val versionCode = executeGitCommand("git rev-list --count HEAD", "1")
 val tagName = executeGitCommand("git tag --points-at HEAD")
 val hash = executeGitCommand("git rev-parse --short HEAD", "nohash")
-val branch = executeGitCommand("git name-rev --name-only --refs=\"refs/heads/*\" HEAD").split("~")[0]
-val outputsDir = "build/appOutputs/$branch/${tagName.ifBlank { "nightly/r$versionCode.$hash" }}"
+val outputsDir = "build/appOutputs/lcsw/${tagName.ifBlank { "nightly/r$versionCode.$hash" }}"
 val mdFileName = "ChangeLog.md"
 
 ext {
     set("versionCode", versionCode)
     set("tagName", tagName)
     set("hash", hash)
-    set("branch", branch)
     set("outputsDir", outputsDir)
     set("changeLog", mdFileName)
 }

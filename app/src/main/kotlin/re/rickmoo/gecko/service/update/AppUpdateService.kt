@@ -25,9 +25,9 @@ class AppUpdateService : LifecycleService() {
         private val DEBUG = BuildConfig.DEBUG
         private val RELEASE_CHANNEL = BuildConfig.VERSION_NAME.startsWith("v")
         private val RELEASE_SERVICE_ROOT =
-            "${BuildConfig.UPDATE_BASE_URL.trimEnd('/')}/${BuildConfig.GIT_BRANCH}"
+            "${BuildConfig.UPDATE_BASE_URL.trimEnd('/')}/"
         private val NIGHTLY_SERVICE_ROOT =
-            "${BuildConfig.UPDATE_BASE_URL.trimEnd('/')}/${BuildConfig.GIT_BRANCH}/nightly"
+            "${BuildConfig.UPDATE_BASE_URL.trimEnd('/')}/nightly"
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

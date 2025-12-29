@@ -23,7 +23,7 @@ import retrofit2.http.Url
 
 class HiddenConfigActivity : ComponentActivity() {
 
-    private val configUrl = "${BuildConfig.UPDATE_BASE_URL.trimEnd('/')}/${BuildConfig.GIT_BRANCH}/envs.json"
+    private val configUrl = "${BuildConfig.UPDATE_BASE_URL.trimEnd('/')}/envs.json"
     private val preferences by lazy { Preferences(this) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

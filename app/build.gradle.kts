@@ -27,7 +27,6 @@ android {
         val tagName = rootProject.ext["tagName"].toString()
         versionName = "${if (tagName.isBlank()) "" else "$tagName."}r$versionCode.${rootProject.ext["hash"].toString()}"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "GIT_BRANCH", "\"${rootProject.ext["branch"].toString()}\"")
         buildConfigField("String", "UPDATE_BASE_URL", "\"${updateBaseUrl.get()}\"")
     }
     buildFeatures {
@@ -121,8 +120,7 @@ androidComponents {
                 val apkFile = dir.listFiles { _, name -> name.endsWith(".apk") }
 
                 if (apkFile != null) {
-                    // 2. 准备数据
-                    val tagName = rootProject.ext["tagName"].toString()
+                    // 准备数据
                     val dateStr = LocalDateTime.now().toString()
 
                     val newEntry = mutableMapOf(
@@ -168,9 +166,9 @@ dependencies {
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-service:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation(libs.androidx.lifecycle.service)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -182,13 +180,13 @@ dependencies {
 
 
     // https://mvnrepository.com/artifact/androidx.datastore/datastore-preferences
-    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.kotlin.reflect)
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation(libs.jackson.databind)
     implementation(libs.jackson.module.kotlin)
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
+    implementation(libs.jackson.datatype.jsr310)
     implementation(libs.okhttp)
     implementation(libs.androidx.work.runtime)
     // https://mvnrepository.com/artifact/com.squareup.retrofit2/retrofit
