@@ -11,11 +11,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import re.rickmoo.gecko.BuildConfig
+import re.rickmoo.gecko.datasource.Preferences
 import re.rickmoo.gecko.misc.AppStatus
 import re.rickmoo.gecko.misc.UpdateBus
 
 
 class AppUpdateService : LifecycleService() {
+
+    private val preferences by lazy { Preferences(this) }
 
     companion object {
         const val TAG = "AppUpdateService"
@@ -42,11 +45,12 @@ class AppUpdateService : LifecycleService() {
             try {
 
                 val config = withContext(Dispatchers.IO) {
-                    val url = if (RELEASE_CHANNEL) {
-                        "${RELEASE_SERVICE_ROOT}/latest-${BuildConfig.BUILD_TYPE}.json"
-                    } else {
-                        "${NIGHTLY_SERVICE_ROOT}/latest-${BuildConfig.BUILD_TYPE}.json"
-                    }
+                    val url =
+                        if (preferences[Preferences.App.UPDATE_CHANNEL]?.let { it == "release" } ?: RELEASE_CHANNEL) {
+                            "${RELEASE_SERVICE_ROOT}/latest-${BuildConfig.BUILD_TYPE}.json"
+                        } else {
+                            "${NIGHTLY_SERVICE_ROOT}/latest-${BuildConfig.BUILD_TYPE}.json"
+                        }
                     UpdateInfoApi.INSTANCE.getUpdateInfo(url)
                 }
 
