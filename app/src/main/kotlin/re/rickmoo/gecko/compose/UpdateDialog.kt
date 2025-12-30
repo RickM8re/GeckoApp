@@ -63,6 +63,8 @@ fun UpdateDialog(
     // 获取屏幕配置以计算高度
     val screenHeight = LocalWindowInfo.current.containerSize.height.dp
     val mdUrl = versionInfo.changeLogUrl
+    val downloadFolder = File(context.filesDir, "update")
+    val downloadFile = File(downloadFolder, "update.apk")
     // 异步加载 Markdown 内容的状态管理
     // 如果 url 为 null，result 默认为 null；如果不为 null，则开始加载
     val markdownContentState = produceState(
@@ -74,7 +76,7 @@ fun UpdateDialog(
                 val content = withContext(Dispatchers.IO) {
                     UpdateInfoApi.INSTANCE.getUpdateMarkdown(mdUrl)
                 }
-                LoadState.Success(content)
+                LoadState.Success(content.string())
             } catch (e: Exception) {
                 LoadState.Error("加载更新日志失败: ${e.localizedMessage}")
             }
@@ -99,11 +101,9 @@ fun UpdateDialog(
         }
     }
 
-    fun checkAndInstall(file: File) {
+    fun checkAndInstall() {
         val hasPermission = context.packageManager.canRequestPackageInstalls()
         if (!hasPermission) {
-            // 1. 没有权限，暂存文件
-            pendingInstallFile = file
             // 2. 跳转到设置页面
             val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                 data = "package:${context.packageName}".toUri()
@@ -112,12 +112,11 @@ fun UpdateDialog(
             return
         }
         // 有权限或系统版本低，直接安装
-        installApk(context, file)
+        installApk(context, downloadFile)
     }
 
     fun startDownload() {
         downloadState = DownloadState.Downloading(0, 1)
-        val base = File(context.cacheDir, "update") // 存放在 Cache 目录
 
         val client = OkHttp.client
         val request = Request.Builder().url(versionInfo.downloadUrl).build()
@@ -132,9 +131,8 @@ fun UpdateDialog(
                 val body = response.body
                 val totalLength = body.contentLength().coerceAtLeast(1)
                 val inputStream = body.byteStream()
-                base.mkdirs()
-                val file = File(base, "update.apk")
-                val outputStream = FileOutputStream(file)
+                downloadFolder.mkdirs()
+                val outputStream = FileOutputStream(downloadFile)
 
                 val buffer = ByteArray(64 * 1024)
                 var bytesRead: Int
@@ -158,8 +156,7 @@ fun UpdateDialog(
                 withContext(Dispatchers.Main) {
                     downloadState = DownloadState.Finished
                 }
-                checkAndInstall(file)
-
+                checkAndInstall()
             } catch (e: Exception) {
                 // 如果是用户主动取消，不做错误处理
                 if (call.isCanceled()) {
@@ -230,8 +227,8 @@ fun UpdateDialog(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         if (downloadState is DownloadState.Idle || downloadState is DownloadState.Error) {
-                            Button(onClick = { startDownload() }) {
-                                Text("立即下载")
+                            Button(onClick = { if (downloadState is DownloadState.Finished) checkAndInstall() else startDownload() }) {
+                                Text(if (downloadState is DownloadState.Finished) "安装" else "立即下载")
                             }
                         }
 

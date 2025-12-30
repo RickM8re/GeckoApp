@@ -32,6 +32,14 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -41,6 +49,7 @@ android {
             )
         }
         debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     splits {
