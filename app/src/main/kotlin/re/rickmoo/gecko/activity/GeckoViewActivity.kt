@@ -63,15 +63,21 @@ class WebViewActivity : ComponentActivity(), ActivityBridge {
         val defaultUrl = runBlocking { preferences[Preferences.GeckoView.DEFAULT_URL] }
         val restoreUrl = runBlocking { preferences[Preferences.GeckoView.RESTORE_URL] }
         val envId = runBlocking { preferences[Preferences.GeckoView.ENV_ID] }
+        var uri: String? = null
         if (savedInstanceState != null && envId != null) {
             savedInstanceState.getString("ENV_ID")?.let {
                 if (envId == it) {
-                    configurer.load((restoreUrl ?: defaultUrl) ?: "about:blank")
-                    return@onCreate
+                    uri = restoreUrl ?: defaultUrl
                 }
             }
         }
-        configurer.load(defaultUrl ?: "about:blank")
+        if (uri == null && defaultUrl != null) {
+            uri = defaultUrl
+        } else {
+            openHiddenConfig()
+            return
+        }
+        configurer.load(uri)
     }
 
     override fun onStart() {
@@ -80,6 +86,16 @@ class WebViewActivity : ComponentActivity(), ActivityBridge {
             startUpdateService()
         }
     }
+
+    fun openHiddenConfig() {
+        val intent = Intent(this, HiddenConfigActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+            Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
+            Intent.FLAG_ACTIVITY_NO_HISTORY
+        startActivity(intent)
+    }
+
 
     fun startUpdateService() {
         val intent = Intent(this, AppUpdateService::class.java)
