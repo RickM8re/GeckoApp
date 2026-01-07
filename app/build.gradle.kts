@@ -1,7 +1,8 @@
 import com.android.build.api.artifact.SingleArtifact
 import groovy.json.JsonOutput
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import java.time.LocalDateTime
-
 
 plugins {
     alias(libs.plugins.android.application)
@@ -56,7 +57,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = false
         }
     }
@@ -72,8 +73,21 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("libs")
+        }
+    }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget("21")
+        languageVersion = KotlinVersion.fromVersion("2.3")
+        apiVersion = KotlinVersion.fromVersion("2.3")
+    }
+    jvmToolchain(21)
+}
 
 androidComponents {
 
@@ -155,7 +169,7 @@ androidComponents {
                 }
             }
         }.also {
-            tasks.matching { it.name == assembleTaskName }.configureEach { finalizedBy(it) }
+            tasks.matching { task -> task.name == assembleTaskName }.configureEach { finalizedBy(it) }
         }
     }
 
@@ -163,6 +177,8 @@ androidComponents {
 
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -204,7 +220,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.mozilla.geckoview/geckoview
     implementation(libs.geckoview)
     implementation(libs.compose.markdown)
-}
-kotlin {
-    jvmToolchain(21)
+
+    implementation(files("libs/AIKit.aar"))
+
 }

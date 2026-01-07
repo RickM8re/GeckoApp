@@ -10,6 +10,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.startup.AppInitializer
 import org.json.JSONObject
 import org.mozilla.gecko.util.ThreadUtils.runOnUiThread
@@ -26,7 +27,7 @@ import kotlin.reflect.full.memberFunctions
 
 class GeckoConfigurer(
     private val context: Context,
-    private val activityBridge: ActivityBridge,
+    private val activityRequestable: ActivityRequestable,
     geckoView: GeckoView,
     private val session: GeckoSession,
     private val configure: GeckoConfigurer.(session: GeckoSession) -> Unit,
@@ -103,12 +104,12 @@ class GeckoConfigurer(
                         permissionCallbackInternal = {
                             callback.grant(video?.firstOrNull(), if (it) audio.firstOrNull() else null)
                         }
-                        activityBridge.requestPermission(Manifest.permission.RECORD_AUDIO)
+                        activityRequestable.requestPermission(Manifest.permission.RECORD_AUDIO)
                     } else if (!audioPermission && videoPermission) {
                         permissionCallbackInternal = {
                             callback.grant(if (it) video.firstOrNull() else null, audio?.firstOrNull())
                         }
-                        activityBridge.requestPermission(Manifest.permission.CAMERA)
+                        activityRequestable.requestPermission(Manifest.permission.CAMERA)
                     } else if (audioPermission) {
                         multiplePermissionCallbackInternal = {
                             callback.grant(
@@ -116,7 +117,7 @@ class GeckoConfigurer(
                                 if (it[Manifest.permission.RECORD_AUDIO] == true) audio.firstOrNull() else null,
                             )
                         }
-                        activityBridge.requestPermission(
+                        activityRequestable.requestPermission(
                             arrayOf(
                                 Manifest.permission.RECORD_AUDIO,
                                 Manifest.permission.CAMERA
@@ -141,7 +142,7 @@ class GeckoConfigurer(
                     }?.filterNotNull()
                     if (needGrant.isNullOrEmpty()) callback.grant()
                     else {
-                        activityBridge.requestPermission(needGrant.toTypedArray())
+                        activityRequestable.requestPermission(needGrant.toTypedArray())
                         multiplePermissionCallbackInternal = {
                             callback.grant()
                         }
@@ -166,7 +167,7 @@ class GeckoConfigurer(
                             else
                                 result.complete(prompt.dismiss())
                         }
-                        activityBridge.requestContent(prompt.mimeTypes?.filterNotNull()?.toTypedArray() ?: emptyArray())
+                        activityRequestable.requestContent(prompt.mimeTypes?.filterNotNull()?.toTypedArray() ?: emptyArray())
                     }
 
                     GeckoSession.PromptDelegate.FilePrompt.Type.MULTIPLE -> {
@@ -176,7 +177,7 @@ class GeckoConfigurer(
                             else
                                 result.complete(prompt.dismiss())
                         }
-                        activityBridge.requestMultipleContent(
+                        activityRequestable.requestMultipleContent(
                             prompt.mimeTypes?.filterNotNull()?.toTypedArray() ?: emptyArray()
                         )
                     }
@@ -238,7 +239,7 @@ class GeckoConfigurer(
                 }
 
                 return try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
                     context.startActivity(intent)
@@ -272,24 +273,21 @@ class GeckoConfigurer(
                     extension?.setMessageDelegate(object : WebExtension.MessageDelegate {
                         // stream message
                         override fun onConnect(port: WebExtension.Port) {
-                            Log.i(null, "onConnect")
-                            port.setDelegate(object : WebExtension.PortDelegate {
-                                override fun onPortMessage(
-                                    message: Any,
-                                    port: WebExtension.Port
-                                ) {
-                                    Log.i("onPortMessage", message.toString())
-                                    port.postMessage(JSONObject(message.toString()))
-                                    port.disconnect()
-                                }
-                            })
+                            Log.i(null, "onConnect: port name:${port.name}")
+                            val portableApp = dependency[name] as? Portable
+                            if (portableApp == null) {
+                                port.disconnect()
+                                Log.i(null, "app: $name does not support port connection")
+                                return
+                            }
+                            portableApp.withPort(port)
                         }
 
                         // One time message
                         override fun onMessage(
                             nativeApp: String,
                             message: Any, // JSONObject | primitive type
-                            sender: WebExtension.MessageSender
+                            sender: WebExtension.MessageSender,
                         ): GeckoResult<in Any> {
                             val result = GeckoResult<Any>()
                             val app = dependency[nativeApp]
@@ -307,10 +305,15 @@ class GeckoConfigurer(
                                         return result
                                     }
                                     try {
-                                        result.complete(function.callNative(app, data))
-                                    } catch (e: Exception) {
+                                        val value = function.callNative(app, data)
+                                        if (value is GeckoResult<*>) {
+                                            @Suppress("UNCHECKED_CAST")
+                                            return value as GeckoResult<Any>
+                                        }
+                                        result.complete(value)
+                                    } catch (e: Throwable) {
                                         Log.e("GeckoExtension", "call native failed", e)
-                                        result.completeExceptionally(RuntimeException("Cannot dispatch native call"))
+                                        result.completeExceptionally(RuntimeException("Cannot dispatch native call", e))
                                     }
                                 }
 

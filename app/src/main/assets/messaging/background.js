@@ -5,23 +5,36 @@
  * @return {boolean}
  * */
 const listener = function (message, sender, sendResponse) {
-    switch (message.type) {
-        case 'CALL_NATIVE_ONE_TIME': {
-            let sending = browser.runtime.sendNativeMessage(message.extensionName, message.payload)
-            sending.then(sendResponse)
-            return true
-        }
-        case 'CALL_NATIVE_CONNECTION': {
-            let port = browser.runtime.connectNative(message.extensionName)
-            port.onMessage.addListener((m) => {
-                sendResponse(m);
-            })
-            port.postMessage(message.payload)
-            return true
-        }
-    }
+    let sending = browser.runtime.sendNativeMessage(message.extensionName, message.payload)
+    sending.then(sendResponse).catch(sendResponse)
+    return true
 }
 browser.runtime.onMessage.addListener(listener);
+
+/**
+ * @param contentPort {Port}
+ * */
+const streamListener = function (contentPort) {
+    const extensionName = contentPort.name
+    const nativePort = browser.runtime.connectNative(extensionName);
+    const nativePortDisconnect = () => {
+        contentPort.onDisconnect.removeListener(contentPortDisconnect)
+        contentPort.disconnect()
+    }
+    const contentPortDisconnect = () => {
+        nativePort.onDisconnect.removeListener(nativePortDisconnect)
+        nativePort.disconnect()
+    }
+    nativePort.onDisconnect.addListener(nativePortDisconnect);
+    nativePort.onMessage.addListener((response) => {
+        contentPort.postMessage(response)
+    })
+    contentPort.onMessage.addListener((response) => {
+        nativePort.postMessage(response)
+    })
+}
+
+browser.runtime.onConnect.addListener(streamListener)
 
 function enablePreRequestCache() {
     browser.webRequest.onHeadersReceived.addListener(

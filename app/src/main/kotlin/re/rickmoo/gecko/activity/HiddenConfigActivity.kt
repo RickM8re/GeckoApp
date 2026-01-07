@@ -79,7 +79,7 @@ class HiddenConfigModel(private val url: String, private val preferences: Prefer
             Log.e("HiddenConfigModel", "Error to fetch gecko urls", e)
             _userList.value = listOf(
                 GeckoUrl(
-                    "fetch gecko url failed",
+                    "",
                     "失败",
                     "获取配置失败, 请联系我们",
                     "https://www.bilibili.com"

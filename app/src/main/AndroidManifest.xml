@@ -11,6 +11,14 @@
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  <!-- iflytek sdk permissions -->
+  <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
+  <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+  <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>
+  <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
 
   <application
     android:allowBackup="true"
@@ -21,6 +29,7 @@
     android:roundIcon="@mipmap/ic_launcher_round"
     android:supportsRtl="true"
     android:name=".GeckoApplication"
+    android:requestLegacyExternalStorage="true"
     android:theme="@style/Theme.GeckoApp">
     <activity
       android:name=".activity.WebViewActivity"

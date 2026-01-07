@@ -1,6 +1,8 @@
 package re.rickmoo.gecko.infra
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.reflect.KFunction
@@ -13,7 +15,10 @@ import kotlin.reflect.full.isSupertypeOf
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
 
-val objectMapper = ObjectMapper()
+val objectMapper = ObjectMapper().apply {
+    registerKotlinModule()
+    registerModule(JavaTimeModule())
+}
 
 fun isPrimitiveType(input: Any): Boolean {
     return when (input) {
@@ -66,7 +71,7 @@ fun Any.toType(type: KType): Any? {
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
+//@OptIn(ExperimentalStdlibApi::class)
 fun JSONArray.toSingleParam(paramType: KType): Any? {
     if (this.length() == 0) {
         return null
@@ -90,7 +95,7 @@ fun JSONArray.simpleToType(index: Int, paramType: KType): Any? {
     if (jsonArrayType.withNullability(true).isSupertypeOf(paramType)) return if (this.isNull(index)) {
         null
     } else JSONObject(this[index].toString())
-    return objectMapper.readValue(this[index].toString(), paramType.jvmErasure.java)
+    return objectMapper.convertValue(this[index], paramType.jvmErasure.java)
 }
 
 fun JSONObject.simpleToType(paramType: KType): Any? {
@@ -109,9 +114,11 @@ fun JSONObject.simpleToType(key: String, paramType: KType): Any? {
 fun KFunction<*>.callNative(app: Any, data: Any): Any? {
     val parameters = parameters
     val namedParamsCount = parameters.count { it.kind == KParameter.Kind.VALUE }
+    var offset = 0
     val params = parameters.map {
         when (it.kind) {
             KParameter.Kind.INSTANCE -> {
+                offset++
                 app
             }
 
@@ -125,12 +132,13 @@ fun KFunction<*>.callNative(app: Any, data: Any): Any? {
                 } else {
                     when (data) {
                         is JSONArray -> {
-                            data.simpleToType(it.index, it.type)
+                            data.simpleToType(it.index - offset, it.type)
                         }
 
                         is JSONObject -> {
                             data.simpleToType(it.name ?: "${it.index}", it.type)
                         }
+
                         else -> null
                     }
                 }

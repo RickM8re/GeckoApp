@@ -16,17 +16,19 @@ import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
 import re.rickmoo.gecko.component.ActivityConfiguration
 import re.rickmoo.gecko.component.GeckoBridge
+import re.rickmoo.gecko.component.Iflytek
 import re.rickmoo.gecko.datasource.Preferences
-import re.rickmoo.gecko.infra.ActivityBridge
+import re.rickmoo.gecko.infra.ActivityRequestable
 import re.rickmoo.gecko.infra.GeckoConfigurer
 import re.rickmoo.gecko.infra.GetContentWithMimeTypes
 import re.rickmoo.gecko.infra.GetMultipleContentWithMimeTypes
 import re.rickmoo.gecko.misc.AppStatus
 import re.rickmoo.gecko.service.update.AppUpdateService
 
-class WebViewActivity : ComponentActivity(), ActivityBridge {
+class WebViewActivity : ComponentActivity(), ActivityRequestable {
     @Volatile
     private var prepared = false
+    private var checkedUpdate = false
     private val session = GeckoSession()
     private val preferences by lazy { Preferences(this) }
     private val backPressedCallback = object : OnBackPressedCallback(false) {
@@ -64,6 +66,7 @@ class WebViewActivity : ComponentActivity(), ActivityBridge {
             addMediaPermissionRequest()
             addExtensionDependency(GeckoBridge())
             addExtensionDependency(activityConfiguration)
+            addExtensionDependency(Iflytek(this@WebViewActivity, lifecycleScope))
             registerWebExtension()
             addProgressDelegate {
                 prepared = true
@@ -86,8 +89,9 @@ class WebViewActivity : ComponentActivity(), ActivityBridge {
 
     override fun onResume() {
         super.onResume()
-        if (AppStatus.isAppForeground()) {
+        if (AppStatus.isAppForeground() && !checkedUpdate) {
             startUpdateService()
+            checkedUpdate = true
         }
     }
 
