@@ -12,9 +12,6 @@ simply integrated geckoview, a firefox webview component.
    invoke the [callNative](app/src/main/assets/messaging/content_script.js) function thus send the message to the
    native.
 3. in `NativeMessage` class, there's some parameters that you need attention.
-    - type: only two types for now: 1. one time message `CALL_NATIVE_ONE_TIME` 2.stream message
-      `CALL_NATIVE_CONNECTION`. it's obviously that one time message is just return a result; stream message is used for
-      create a connection to continuously receiving message.
     - extensionName: this is the name of dependencies that you added by `GeckoConfigurer`, native message handler use
       this to identify which dependency would be used.
     - action: after use `extensionName` to find the specific extension, then the name of method as same as action will
@@ -30,7 +27,6 @@ simply integrated geckoview, a firefox webview component.
 # TODO
 
 - [x] update checking
-- [ ] stream message
+- [x] stream message
 - [ ] more activity configuration
-- [ ] Glide cache
 
