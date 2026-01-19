@@ -1,6 +1,8 @@
 package re.rickmoo.gecko.activity
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,6 +10,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresPermission
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -24,7 +29,6 @@ import re.rickmoo.gecko.infra.GetContentWithMimeTypes
 import re.rickmoo.gecko.infra.GetMultipleContentWithMimeTypes
 import re.rickmoo.gecko.misc.AppStatus
 import re.rickmoo.gecko.service.update.AppUpdateService
-
 class WebViewActivity : ComponentActivity(), ActivityRequestable {
     @Volatile
     private var prepared = false
@@ -44,6 +48,7 @@ class WebViewActivity : ComponentActivity(), ActivityRequestable {
         super.onSaveInstanceState(outState)
     }
 
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val splashScreen = installSplashScreen()
@@ -51,7 +56,7 @@ class WebViewActivity : ComponentActivity(), ActivityRequestable {
         val geckoView = GeckoView(this)
         val activityConfiguration = ActivityConfiguration(this@WebViewActivity)
         activityConfiguration.setSystemUiVisible(false)
-        val configurer = GeckoConfigurer(this, this, geckoView, session) {
+        val configurer = GeckoConfigurer(this, this, geckoView, session)  {
             multiplePermissionCallback = this::multiplePermissionCallback
             permissionCallback = this::permissionCallback
             contentCallback = this::contentCallback
